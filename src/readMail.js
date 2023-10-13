@@ -25,7 +25,6 @@ export const readMail = async (connection) => {
 		}, { subArr: ["OR"], mainArr: ["OR"] })
 		
 		emailSendersToNotifyFor = emailSendersToNotifyFor.mainArr
-		console.log("emailSendersToNotifyFor", emailSendersToNotifyFor)
 
 		const searchCriteria = ["UNSEEN", ["SINCE", last1Min]]
 
