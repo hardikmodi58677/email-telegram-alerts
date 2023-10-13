@@ -8,9 +8,25 @@ export const readMail = async (connection) => {
 
 		await connection.openBox("INBOX")
 		const last1Min = new Date().getTime() - 60 * 1000
-		const emailSendersToNotifyFor = CONFIG.EMAIL_SENDERS_LIST.length
-			? ["OR", ...CONFIG.EMAIL_SENDERS_LIST.map((email) => ["FROM", email])]
-			: null
+
+		let emailSendersToNotifyFor = null
+		emailSendersToNotifyFor = CONFIG.EMAIL_SENDERS_LIST.reduce((acc, email, index) => {
+			acc.subArr.push(["FROM", email])
+			if(acc.subArr.length === 3){
+				acc.mainArr.push(acc.subArr)
+				acc.subArr = ["OR"]
+			}
+
+			if(index === CONFIG.EMAIL_SENDERS_LIST.length-1 && (index+1)%2 !== 0){
+				acc.mainArr.push(["FROM", email])
+			}
+			return acc
+
+		}, { subArr: ["OR"], mainArr: ["OR"] })
+		
+		emailSendersToNotifyFor = emailSendersToNotifyFor.mainArr
+		console.log("emailSendersToNotifyFor", emailSendersToNotifyFor)
+
 		const searchCriteria = ["UNSEEN", ["SINCE", last1Min]]
 
 		if (emailSendersToNotifyFor) {
@@ -33,25 +49,25 @@ export const readMail = async (connection) => {
 
 			setTimeout(() => {
 				readMail(connection)
-			}, CONFIG.CHECK_MAIL_INTERVAL_SECONDS )
+			}, CONFIG.CHECK_MAIL_INTERVAL_SECONDS)
 			return
 		}
 
 		results.forEach((res) => {
-			let [emailHtml=""] = res.parts.filter((part) => {
+			let [emailHtml = ""] = res.parts.filter((part) => {
 				return part.which === "TEXT"
 			})
 
 			emailHtml = emailHtml?.body || ""
 
-			let [subject=""] = res.parts.filter((part) => {
+			let [subject = ""] = res.parts.filter((part) => {
 				return part.which === "HEADER"
 			})
 
 			// [0].body?.subject[0]
 			subject = subject?.body?.subject[0] || ""
 
-			let [sender=""] = res.parts.filter((part) => {
+			let [sender = ""] = res.parts.filter((part) => {
 				return part.which === "HEADER"
 			})
 
@@ -65,10 +81,10 @@ export const readMail = async (connection) => {
 			readMail(connection)
 		}, CONFIG.CHECK_MAIL_INTERVAL_SECONDS)
 	} catch (error) {
-		eventEmitter.emit("newMail",{subject:"Error",text:"Error while reading mail",sender:"Error"})
+		eventEmitter.emit("newMail", { subject: "Error", text: "Error while reading mail", sender: "Error" })
 		setTimeout(() => {
 			readMail(connection)
-		}, CONFIG.CHECK_MAIL_INTERVAL_SECONDS )
+		}, CONFIG.CHECK_MAIL_INTERVAL_SECONDS)
 		console.log(error)
 	}
 }
