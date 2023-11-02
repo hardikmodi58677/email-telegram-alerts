@@ -8,6 +8,12 @@ const bootstrap = async () => {
 	const connection = await imaps.connect(READ_MAIL_CONFIG)
 	console.log("CONNECTION SUCCESSFUL", new Date().toString())
 	await readMail(connection)
+
+	// Kill this process after 1 hour
+	setTimeout(() => {
+		process.exit(0)
+	}, 60 * 60 * 1000)
+
 }
 
 eventEmitter.on("newMail", async (mail) => {
